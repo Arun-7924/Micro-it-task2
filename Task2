@@ -1,0 +1,117 @@
+#include <iostream> // For input/output operations
+#include <string>   // For using std::string
+#include <limits>   // For std::numeric_limits
+#include <fstream>  // For file operations (to store password)
+
+// Function to get a password with masked input (rudimentary)
+// Note: This masking is very basic and won't work on all terminals/OSes without
+// more advanced libraries (e.g., conio.h for Windows, termios for Unix-like).
+// For simplicity in cross-platform basic C++, we'll just read normally.
+std::string getPasswordInput(const std::string& prompt, bool mask_input = false) {
+    std::string password;
+    std::cout << prompt;
+
+    // For truly masked input, you'd need OS-specific libraries like <conio.h> on Windows
+    // or <termios.h> on Unix-like systems.
+    // As a basic C++ example, we'll just read it directly.
+    std::cin >> password;
+
+    // Clear input buffer for safety
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    return password;
+}
+
+// Function to register a new user (set password)
+void registerUser(const std::string& filename) {
+    std::ofstream outFile(filename); // Open file in write mode (creates if not exists, truncates if exists)
+
+    if (!outFile.is_open()) {
+        std::cerr << "Error: Could not open file for writing." << std::endl;
+        return;
+    }
+
+    std::string newPassword;
+    std::string confirmPassword;
+
+    do {
+        newPassword = getPasswordInput("Enter your new password: ");
+        confirmPassword = getPasswordInput("Confirm your new password: ");
+
+        if (newPassword != confirmPassword) {
+            std::cout << "Passwords do not match. Please try again." << std::endl;
+        }
+    } while (newPassword != confirmPassword);
+
+    outFile << newPassword; // Write the password to the file
+    outFile.close();         // Close the file
+
+    std::cout << "Password set successfully!" << std::endl;
+}
+
+// Function to log in (verify password)
+bool loginUser(const std::string& filename) {
+    std::ifstream inFile(filename); // Open file in read mode
+
+    if (!inFile.is_open()) {
+        std::cerr << "Error: No password set yet. Please register first." << std::endl;
+        return false;
+    }
+
+    std::string storedPassword;
+    inFile >> storedPassword; // Read the stored password
+    inFile.close();           // Close the file
+
+    std::string enteredPassword = getPasswordInput("Enter your password: ");
+
+    if (enteredPassword == storedPassword) {
+        std::cout << "Login successful! Welcome." << std::endl;
+        return true;
+    } else {
+        std::cout << "Login failed. Incorrect password." << std::endl;
+        return false;
+    }
+}
+
+int main() {
+    const std::string PASSWORD_FILE = "user_password.txt"; // File to store the password
+
+    int choice;
+    do {
+        std::cout << "\n--- Password System ---" << std::endl;
+        std::cout << "1. Register (Set Password)" << std::endl;
+        std::cout << "2. Login" << std::endl;
+        std::cout << "3. Exit" << std::endl;
+        std::cout << "-----------------------" << std::endl;
+        std::cout << "Enter your choice (1-3): ";
+        std::cin >> choice;
+
+        // Input validation for choice
+        if (std::cin.fail() || choice < 1 || choice > 3) {
+            std::cout << "Invalid choice. Please enter a number between 1 and 3." << std::endl;
+            std::cin.clear(); // Clear error flags
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Discard invalid input
+            continue; // Skip to the next iteration
+        }
+
+        // Clear the remaining newline character after reading choice
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        switch (choice) {
+            case 1:
+                registerUser(PASSWORD_FILE);
+                break;
+            case 2:
+                loginUser(PASSWORD_FILE);
+                break;
+            case 3:
+                std::cout << "Exiting password system. Goodbye!" << std::endl;
+                break;
+            default:
+                std::cout << "An unexpected error occurred." << std::endl;
+                break;
+        }
+
+    } while (choice != 3); // Loop until user chooses to exit
+
+    return 0;
+}
